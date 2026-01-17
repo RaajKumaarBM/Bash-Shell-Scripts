@@ -1,0 +1,446 @@
+#!/bin/bash
+
+########################## Script name: sanitycheck.sh ######################################
+# Purpose    : This script will fetch all the necessary OS parameters such as uptime,       #
+#              Kernel Version, OS Version, DNS entries, Important Service Status, LVMs      #
+#	       Kernel Parameters, Refresh Repo, Mounts, List Updates.			    #
+#              Performs the PRE & POST validation and notify in case of any discrepancies.  #
+#	       It Supports all three major distros RHEL, SUSE and Ubuntu.                   #
+# Created By : bmraajkumaar@gmail.com					   	            #
+#############################################################################################
+
+sudo mkdir -p /var/log/sanitychecks
+sudo chmod -R 777 /var/log/sanitychecks
+echo $'/\n/root\n/home\n/boot\n/boot/efi\n/etc\n/usr\n/tmp\n/var\n/opt\n/bin\n/sbin\n/lib' > /var/log/sanitychecks/os_filesystem.txt
+echo $'rsyslog\nchronyd\nsshd\nauditd\nqualys-cloud-agent\nmdatp*' > /var/log/sanitychecks/services.txt
+read -p "Enter your Mail ID to send the sanity check output: " MailID
+read -p "Enter the Linux Distro RHEL/SUSE/UBUNTU: " distro
+read -p "Enter the type of health check you need PRE/POST: " check
+r='\033[0;31m'
+y='\033[0;33m'
+c='\033[0;36m'
+g='\033[0;32m'
+clr='\033[0m'
+SN=`uname -n`
+
+if [ $distro == "RHEL" ] || [ $distro == "SUSE" ] || [ $distro == "UBUNTU" ]; then
+if [ $check == "PRE" ] || [ $check == "POST" ]; then
+
+ echo -e "\nHi Team, \n\nKindly find the requested $check-Check report below." > /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+ echo $'\n-------------------------------------------------------------------------------------------------------------------------------------------------------------\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+
+ echo $'Hostname, Kernel Version, Operating System, Date & Architecture Details:\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+ uname -a >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+ echo $'\n-------------------------------------------------------------------------------------------------------------------------------------------------------------\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+
+ echo $'Current Date & Time:\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+ date >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+ echo $'\n-------------------------------------------------------------------------------------------------------------------------------------------------------------\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+
+ echo $'Current Kernel Version:\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+ uname -r >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+ echo $'\n-------------------------------------------------------------------------------------------------------------------------------------------------------------\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+
+ echo $'VM Uptime:\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+ uptime >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+ echo $'\n-------------------------------------------------------------------------------------------------------------------------------------------------------------\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+
+ echo $'Distro & Version:\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+ sudo grep PRETTY_NAME /etc/os-release | cut -d'"' -f2 >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+ echo $'\n-------------------------------------------------------------------------------------------------------------------------------------------------------------\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+
+ echo $'Memory Utilization:\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+ free -h >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+ echo $'\n-------------------------------------------------------------------------------------------------------------------------------------------------------------\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+
+ echo $'Swap Memory:\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+ sudo swapon -s >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+ echo $'\n-------------------------------------------------------------------------------------------------------------------------------------------------------------\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+
+
+ echo $'Disk Space Utilization:\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+ sudo df -ThP | grep -v tmpfs >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+ echo $'\n-------------------------------------------------------------------------------------------------------------------------------------------------------------\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+
+ echo $'Permanent Filesystem Entries:\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+ sudo cat /etc/fstab >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+ echo $'\n-------------------------------------------------------------------------------------------------------------------------------------------------------------\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+
+ echo $'List of Block Device Entries:\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+ sudo lsblk -f >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+ echo $'\n-------------------------------------------------------------------------------------------------------------------------------------------------------------\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+
+yum install lvm2 -y 2> /dev/null
+
+apt install lvm2 -y 2> /dev/null
+
+ echo $'Physical Volume Details:\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+ sudo pvs >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+ echo $'\n-------------------------------------------------------------------------------------------------------------------------------------------------------------\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+
+ echo $'Volume Group Details:\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+ sudo vgs >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+ echo $'\n-------------------------------------------------------------------------------------------------------------------------------------------------------------\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+
+ echo $'Logical Volume Details:\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+ sudo lvs >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+ echo $'\n-------------------------------------------------------------------------------------------------------------------------------------------------------------\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+
+ echo $'IP Configuration:\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+ ip a show >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+ echo $'\n-------------------------------------------------------------------------------------------------------------------------------------------------------------\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+
+ echo $'Print Local DNS file Entries:\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+ sudo cp /etc/hosts /etc/hosts_${check}_Check_$(date +"%d%b%y")
+ sudo cat /etc/hosts >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+ echo $'\n-------------------------------------------------------------------------------------------------------------------------------------------------------------\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+
+ echo $'Print DNS server Entries:\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+ sudo cp /etc/resolv.conf /etc/resolv.conf_${check}_Check_$(date +"%d%b%y")
+ sudo cat /etc/resolv.conf >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+ echo $'\n-------------------------------------------------------------------------------------------------------------------------------------------------------------\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+
+ echo $'IP Route Show :\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+ ip route show >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+ echo $'\n-------------------------------------------------------------------------------------------------------------------------------------------------------------\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+
+ for i in `cat /var/log/sanitychecks/services.txt`
+ do
+ echo $'\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+ echo "The $i service status:" >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+ sudo systemctl status $i 2> /dev/null | grep Active | head -n1 >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+ done
+ echo $'\n-------------------------------------------------------------------------------------------------------------------------------------------------------------\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+
+
+ echo $'Limits.Conf Entries:\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+ sudo cp /etc/security/limits.conf /etc/security/limits.conf_${check}_Check_$(date +"%d%b%y")
+ sudo cat /etc/security/limits.conf >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+ echo $'\n-------------------------------------------------------------------------------------------------------------------------------------------------------------\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+
+ echo $'SysCtl Configuration File Entries:\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+ sudo cp /etc/sysctl.conf /etc/sysctl.conf_${check}_Check_$(date +"%d%b%y")
+ sudo cat /etc/sysctl.conf >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+ echo $'\n-------------------------------------------------------------------------------------------------------------------------------------------------------------\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+
+ echo $'Root Cronjobs:\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+ sudo crontab -l >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+ echo $'\n-------------------------------------------------------------------------------------------------------------------------------------------------------------\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+
+ if [ $distro == "SUSE" ]; then
+  echo $'Block ID Entries:\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+  sudo blkid >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+  echo $'\n-------------------------------------------------------------------------------------------------------------------------------------------------------------\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+  echo $'REPO Refresh Output:\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+  sudo zypper refresh >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+  echo $'\n-------------------------------------------------------------------------------------------------------------------------------------------------------------\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+  echo $'List Update:\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+  sudo zypper pchk >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+  echo $'\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+  sudo zypper lu >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+  echo $'\n-------------------------------------------------------------------------------------------------------------------------------------------------------------\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+  echo $'Reboot Requirement: \n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+  echo $'\n'
+  RRS=`sudo zypper ps | tail -n1`
+  echo -e "$y $RRS $clr"
+  sudo zypper ps | tail -n1 >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+  echo $'\n-------------------------------------------------------------------------------------------------------------------------------------------------------------\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+ fi
+
+ if [ $distro == "RHEL" ]; then
+  echo $'Block ID Entries:\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+  sudo blkid >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+  echo $'\n-------------------------------------------------------------------------------------------------------------------------------------------------------------\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+  echo $'REPO Refresh Output:\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+  sudo yum repolist >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt 2> /dev/null
+  echo $'\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+  sudo yum repoinfo >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt 2> /dev/null
+  echo $'\n-------------------------------------------------------------------------------------------------------------------------------------------------------------\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+  echo $'List Update:\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+  sudo yum check-update >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt 2> /dev/null
+  echo $'\n-------------------------------------------------------------------------------------------------------------------------------------------------------------\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+  echo $'Reboot Requirement: \n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+  echo $'\n'
+  needs-restarting -r 2> /dev/null 1> /var/log/sanitychecks/`uname -n`_${check}_RR_Check.txt
+  RRR=`sudo grep -i reboot /var/log/sanitychecks/${SN}_${check}_RR_Check.txt`
+  echo -e "$y $RRR $clr"
+  echo $RRR >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt 2> /dev/null
+  echo $'\n-------------------------------------------------------------------------------------------------------------------------------------------------------------\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+ fi
+
+ if [ $distro == "UBUNTU" ]; then
+  echo $'Block ID Entries:\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+  blkid >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+  echo $'\n-------------------------------------------------------------------------------------------------------------------------------------------------------------\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+  echo $'REPO Refresh Output:\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+  sudo apt update >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt 2> /dev/null
+  echo $'\n-------------------------------------------------------------------------------------------------------------------------------------------------------------\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+  echo $'List Update:\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+  sudo apt list --upgradable >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt 2> /dev/null
+  echo $'\n-------------------------------------------------------------------------------------------------------------------------------------------------------------\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+  echo $'Reboot Requirement: \n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+  echo $'\n'
+  RRU=`cat /var/run/reboot-required`
+  echo -e "$y $RRU $clr"
+  sudo cat /var/run/reboot-required  >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+  echo $'\n-------------------------------------------------------------------------------------------------------------------------------------------------------------\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+ fi
+
+ if [ $check == "PRE" ];then
+
+  sudo cat /etc/sysctl.conf > /var/log/sanitychecks/`uname -n`_PRE_Check_SysCtl_Conf.txt
+  sudo cat /etc/security/limits.conf > /var/log/sanitychecks/`uname -n`_PRE_Check_Limits_Conf.txt
+  sudo cat /etc/hosts > /var/log/sanitychecks/`uname -n`_PRE_Check_etc_hosts.txt
+  sudo cat /etc/resolv.conf > /var/log/sanitychecks/`uname -n`_PRE_Check_etc_resolv_conf.txt
+  uname -r > /var/log/sanitychecks/`uname -n`_PRE_Kernerl_Ver.txt
+
+  pre_swap=`sudo swapon -s | wc -l`
+
+  cat /dev/null > /var/log/sanitychecks/`uname -n`_PRE_FSTabVsDf.txt
+  cat /etc/fstab | grep -v "#" | awk '{print$2}' | grep / > /var/log/sanitychecks/fstab_entries.txt
+  for i in `cat /var/log/sanitychecks/fstab_entries.txt`
+  do
+  Crnt_Mount=`sudo df -Ph | grep -w $i | head -n1 | awk '{print$6}'`
+  if [ "$Crnt_Mount" != "$i" ]; then
+    echo $i >> /var/log/sanitychecks/`uname -n`_PRE_FSTabVsDf.txt
+  fi
+  done
+  FSTabVsDf_WC=`cat /var/log/sanitychecks/${SN}_PRE_FSTabVsDf.txt | wc -l`
+  FSTabVsDf=`cat /var/log/sanitychecks/${SN}_PRE_FSTabVsDf.txt`
+  if [ $FSTabVsDf_WC != 0 ]; then
+    echo -e "$r The below Filesystem entry exists in $y /etc/fstab $r but currently not mounted. $clr"
+    echo -e "$c $FSTabVsDf"
+    echo "The below Filesystems entries exists in /etc/fstab but currently not mounted." >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+    sudo cat /var/log/sanitychecks/`uname -n`_PRE_FSTabVsDf.txt >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+    echo $'\n-------------------------------------------------------------------------------------------------------------------------------------------------------------\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+  fi
+
+  cat /dev/null > /var/log/sanitychecks/${SN}_PRE_VM_Details.txt
+  cat /dev/null > /var/log/sanitychecks/${SN}_PRE_Last_Change.txt
+  cat /dev/null > /var/log/sanitychecks/${SN}_PRE_Pass_Exp.txt
+  cat /dev/null > /var/log/sanitychecks/${SN}_PRE_Pass_ValiDays.txt
+  cat /dev/null > /var/log/sanitychecks/${SN}_PRE_local_account_attributes.txt
+
+  egrep -wv "nologin|sync|shutdown|halt|false" /etc/passwd | cut -d":" -f1 | egrep -wv "root|azladmin|bin|daemon|lp|news|uucp|games|man|nobody|at" > /var/log/sanitychecks/`uname -n`_PRE_localaccount.txt
+
+  for i in `cat /var/log/sanitychecks/${SN}_PRE_localaccount.txt`; do sudo chage -l $i 2> /dev/null | grep 'Maximum' | cut -d':' -f2 >> /var/log/sanitychecks/`uname -n`_PRE_Pass_ValiDays.txt; done
+  for i in `cat /var/log/sanitychecks/${SN}_PRE_localaccount.txt`; do echo "$i" >> /var/log/sanitychecks/`uname -n`_PRE_VM_Details.txt; done
+  for i in `cat /var/log/sanitychecks/${SN}_PRE_localaccount.txt`; do sudo chage -l $i 2> /dev/null | grep 'Last' | cut -d':' -f2 | sed 's\,\\g'>> /var/log/sanitychecks/`uname -n`_PRE_Last_Change.txt; done
+  for i in `cat /var/log/sanitychecks/${SN}_PRE_localaccount.txt`; do sudo chage -l $i 2> /dev/null | grep 'Password expires' | cut -d':' -f2 | sed 's\,\\g' >> /var/log/sanitychecks/`uname -n`_PRE_Pass_Exp.txt; done
+  paste -d',' /var/log/sanitychecks/`uname -n`_PRE_VM_Details.txt /var/log/sanitychecks/`uname -n`_PRE_Last_Change.txt /var/log/sanitychecks/`uname -n`_PRE_Pass_Exp.txt /var/log/sanitychecks/`uname -n`_PRE_Pass_ValiDays.txt > /var/log/sanitychecks/`uname -n`_PRE_local_account_attributes.txt
+  sed -i '1iUser,Last_Change,Password_Expiry,Password_Validays' /var/log/sanitychecks/`uname -n`_PRE_local_account_attributes.txt
+  echo $'Local Account Attributes: \n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+  cat /var/log/sanitychecks/`uname -n`_PRE_local_account_attributes.txt >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+  echo $'\n-------------------------------------------------------------------------------------------------------------------------------------------------------------\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+
+
+  sudo df -Ph | grep -vE '^Filesystem|tmpfs|cdrom' | awk '{print $6}' | cut -d% -f1 > /var/log/sanitychecks/`uname -n`_PRE_Check_MountPoints.txt
+
+  fs_thres=90
+  cat /dev/null > /var/log/sanitychecks/`uname -n`_${check}_FS_Usg_Check.txt
+  for i in `cat /var/log/sanitychecks/os_filesystem.txt`
+  do
+  Utilz_Per=`df -Ph $i | grep -v Filesystem | awk '{print$5}' | cut -d% -f1`
+  if [ $Utilz_Per -gt $fs_thres ]; then
+   echo $i >> /var/log/sanitychecks/`uname -n`_${check}_FS_Usg_Check.txt
+  fi
+  done
+  FS_Usg_WC=`cat /var/log/sanitychecks/${SN}_${check}_FS_Usg_Check.txt | wc -l`
+  FS_Usg=`cat /var/log/sanitychecks/${SN}_${check}_FS_Usg_Check.txt`
+  if [ $FS_Usg_WC -gt 0 ]; then
+   echo $'\n'
+   echo -e "$y Perform housekeeping on the below filesystems before the VM restart, As the utilization is above the threshold level: $r $fs_thres% $clr"
+   echo -e "$y Mount Point Information:- $clr"
+   echo -e "$c $FS_Usg $clr"
+   echo "Perform housekeeping on the below filesystems before the VM restart, As the utilization is above the threshold level: $fs_thres%" >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+   echo $'\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+   echo "Mount Point Information:-" >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+   echo "$FS_Usg" >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+   echo $'\n-------------------------------------------------------------------------------------------------------------------------------------------------------------\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+  fi
+
+ fi
+
+ if [ $check == "POST" ]; then
+
+  if [ "$pre_swap" == 0 ]; then
+    echo -e "$r Kindly go through the PRE Check and disable the swap memory as its appears to be in disabled state before patching/reboot. $clr"
+    echo "Kindly go through the PRE Check and disable the swap memory as its appears to be in disabled state before patching/reboot" >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+    echo $'\n-------------------------------------------------------------------------------------------------------------------------------------------------------------\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+
+  fi
+
+  Pre_KernVer=`cat /var/log/sanitychecks/${SN}_PRE_Kernerl_Ver.txt`
+  Curr_KernVer=`uname -r`
+  if [ $Curr_KernVer == $Pre_KernVer ]; then
+   echo $'\n'
+   echo -e "$r The Kernel Version of this VM is not updated. It appears the VM was not patched. Ignore if this sanity check is for a normal reboot $clr"
+   echo -e "$r  Kernel Version before patching: $y $Pre_KernVer $clr"
+   echo -e "$r  Kernel Version after patching : $y $Curr_KernVer $clr"
+   echo $'\n'
+   echo "The Kernel Version of this VM is not updated. It appears the VM was not patched. Ignore if its just a normal reboot."  >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+   echo "Kernel Version before patching: $Pre_KernVer"  >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+   echo "Kernel Version after patching : $Curr_KernVer"  >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+   echo $'\n-------------------------------------------------------------------------------------------------------------------------------------------------------------\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+  fi
+
+
+  sudo diff /var/log/sanitychecks/${SN}_PRE_Check_Limits_Conf.txt /etc/security/limits.conf > /var/log/sanitychecks/`uname -n`_Limits_Diff.txt
+  Limits_Diff_WC=`sudo cat /var/log/sanitychecks/${SN}_Limits_Diff.txt | wc -l`
+  if [ $Limits_Diff_WC -gt 0 ]; then
+   echo $'\n'
+   echo -e "$r There is a difference in $y limits.conf $r file entries post patching/reboot. Kindly check $y /var/log/sanitychecks/${SN}_Limits_Diff.txt $r file for more info.$clr"
+   echo $'Difference in Limits.Conf :\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+   echo "There is a Difference in limits.conf file entries post patching/reboot." >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+   cat /var/log/sanitychecks/`uname -n`_Limits_Diff.txt >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+   echo $'\n-------------------------------------------------------------------------------------------------------------------------------------------------------------\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+  fi
+
+  sudo diff /var/log/sanitychecks/${SN}_PRE_Check_SysCtl_Conf.txt /etc/sysctl.conf > /var/log/sanitychecks/`uname -n`_SysCtl_Diff.txt
+  SysCtl_Diff_WC=`sudo cat /var/log/sanitychecks/${SN}_SysCtl_Diff.txt | wc -l`
+  if [ $SysCtl_Diff_WC -gt 0 ]; then
+   echo $'\n'
+   echo -e "$r There is a Difference in $y sysctl.conf $r file entries post patching/reboot. Kindly check $y /var/log/sanitychecks/${SN}_SysCtl_Diff.txt $r file for more info.$clr"
+   echo $'Difference in SysCtl.Conf :\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+   echo "There is a Difference in sysctl.conf file entries post patching/reboot." >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+   cat  /var/log/sanitychecks/`uname -n`_SysCtl_Diff.txt >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+   echo $'\n-------------------------------------------------------------------------------------------------------------------------------------------------------------\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+  fi
+
+  sudo diff /var/log/sanitychecks/${SN}_PRE_Check_etc_hosts.txt /etc/hosts > /var/log/sanitychecks/`uname -n`_etc_hosts_Diff.txt
+  Hosts_Diff_WC=`sudo cat /var/log/sanitychecks/${SN}_etc_hosts_Diff.txt | wc -l`
+  if [ $Hosts_Diff_WC -gt 0 ]; then
+   echo $'\n'
+   echo -e "$r There is a difference in $y etc hosts $r file entries post patching/reboot. Kindly check $y /var/log/sanitychecks/${SN}_etc_hosts_Diff.txt $r file for more info.$clr"
+   echo $'Difference in /etc/hosts :\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+   echo "There is a Difference in /etc/hosts file entries post patching/reboot." >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+   cat /var/log/sanitychecks/`uname -n`_etc_hosts_Diff.txt >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+   echo $'\n-------------------------------------------------------------------------------------------------------------------------------------------------------------\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+  fi
+
+  sudo diff /var/log/sanitychecks/${SN}_PRE_Check_etc_resolv_conf.txt /etc/resolv.conf > /var/log/sanitychecks/`uname -n`_resolv_Diff.txt
+  Resolv_Diff_WC=`sudo cat /var/log/sanitychecks/${SN}_resolv_Diff.txt | wc -l`
+  if [ $Resolv_Diff_WC -gt 0 ]; then
+   echo $'\n'
+   echo -e "$r There is a difference in $y resolv.conf $r file entries post patching/reboot. Kindly check $y /var/log/sanitychecks/${SN}_resolv_Diff.txt $r file for more info.$clr"
+   echo $'Difference in /etc/resolv.Conf :\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+   echo "There is a Difference in /etc/resolv.conf file entries post patching/reboot." >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+   cat /var/log/sanitychecks/`uname -n`_resolv_Diff.txt >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+   echo $'\n-------------------------------------------------------------------------------------------------------------------------------------------------------------\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+  fi
+
+  cat /dev/null > /var/log/sanitychecks/${SN}_POST_VM_Details.txt
+  cat /dev/null > /var/log/sanitychecks/${SN}_POST_Last_Change.txt
+  cat /dev/null > /var/log/sanitychecks/${SN}_POST_Pass_Exp.txt
+  cat /dev/null > /var/log/sanitychecks/${SN}_POST_Pass_ValiDays.txt
+  cat /dev/null > /var/log/sanitychecks/${SN}_POST_local_account_attributes.txt
+
+   egrep -wv "nologin|sync|shutdown|halt|false" /etc/passwd | cut -d":" -f1 | egrep -wv "root|azladmin|bin|daemon|lp|news|uucp|games|man|nobody|at" > /var/log/sanitychecks/`uname -n`_POST_localaccount.txt
+  for i in `cat /var/log/sanitychecks/${SN}_POST_localaccount.txt`; do sudo chage -l $i 2> /dev/null | grep 'Maximum' | cut -d':' -f2 >> /var/log/sanitychecks/`uname -n`_POST_Pass_ValiDays.txt; done
+  for i in `cat /var/log/sanitychecks/${SN}_POST_localaccount.txt`; do echo "$i" >> /var/log/sanitychecks/`uname -n`_POST_VM_Details.txt; done
+  for i in `cat /var/log/sanitychecks/${SN}_POST_localaccount.txt`; do sudo chage -l $i 2> /dev/null | grep 'Last' | cut -d':' -f2 | sed 's\,\\g' >> /var/log/sanitychecks/`uname -n`_POST_Last_Change.txt; done
+  for i in `cat /var/log/sanitychecks/${SN}_POST_localaccount.txt`; do sudo chage -l $i 2> /dev/null | grep 'Password expires' | cut -d':' -f2 |sed 's\,\\g' >> /var/log/sanitychecks/`uname -n`_POST_Pass_Exp.txt; done
+  paste -d',' /var/log/sanitychecks/`uname -n`_POST_VM_Details.txt /var/log/sanitychecks/`uname -n`_POST_Last_Change.txt /var/log/sanitychecks/`uname -n`_POST_Pass_Exp.txt /var/log/sanitychecks/`uname -n`_POST_Pass_ValiDays.txt > /var/log/sanitychecks/`uname -n`_POST_local_account_attributes.txt
+  sed -i '1iUser,Last_Change,Password_Expiry,Password_Validays' /var/log/sanitychecks/`uname -n`_POST_local_account_attributes.txt
+  echo $'Local Account Attributes: \n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+  cat /var/log/sanitychecks/`uname -n`_POST_local_account_attributes.txt >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+  echo $'\n-------------------------------------------------------------------------------------------------------------------------------------------------------------\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+
+  sudo diff /var/log/sanitychecks/${SN}_PRE_local_account_attributes.txt /var/log/sanitychecks/${SN}_POST_local_account_attributes.txt > /var/log/sanitychecks/`uname -n`_local_account_attributes_Diff.txt
+  LAA_Diff_WC=`sudo cat /var/log/sanitychecks/${SN}_local_account_attributes_Diff.txt | wc -l`
+  if [ $LAA_Diff_WC -gt 0 ]; then
+   echo $'\n'
+   sed -i '2iUser,Last_Change,Password_Expiry,Password_Validays' /var/log/sanitychecks/${SN}_local_account_attributes_Diff.txt
+   echo -e "$r There is a Difference in$y local account attributes$r post patching/reboot.$clr"
+   cat  /var/log/sanitychecks/`uname -n`_local_account_attributes_Diff.txt
+   echo $'Difference in local account attributes :\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+   echo "There is a Difference in local account attributes post patching/reboot." >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+   cat  /var/log/sanitychecks/`uname -n`_local_account_attributes_Diff.txt >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+   echo $'\n-------------------------------------------------------------------------------------------------------------------------------------------------------------\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+  fi
+
+  cat /dev/null > /var/log/sanitychecks/`uname -n`_POST_Check_Missing_FS.txt
+  for i in `cat /var/log/sanitychecks/${SN}_PRE_Check_MountPoints.txt`
+  do
+  sudo df -Ph | grep -w $i > /dev/null
+  if [ $? != 0 ];then
+   echo $i >> /var/log/sanitychecks/`uname -n`_POST_Check_Missing_FS.txt
+  fi
+  done
+  Missed_FS_WC=`cat /var/log/sanitychecks/${SN}_POST_Check_Missing_FS.txt | wc -l`
+  Missed_FS=`cat /var/log/sanitychecks/${SN}_POST_Check_Missing_FS.txt`
+  if [ $Missed_FS_WC != 0 ]; then
+   echo $'\n'
+   echo -e "$r The below filesystem are mounted before VM patch/reboot but currently not mounted:- $clr"
+   echo $'\n'
+   echo -e "$c $Missed_FS $clr"
+   echo "The below filesystem are mounted before VM patch/reboot but currently not mounted" >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+   sudo cat /var/log/sanitychecks/`uname -n`_POST_Check_Missing_FS.txt  >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+   echo $'\n-------------------------------------------------------------------------------------------------------------------------------------------------------------\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+  fi
+
+  cat /dev/null > /var/log/sanitychecks/`uname -n`_POST_TabVsDf.txt
+  cat /etc/fstab | grep -v "#" | awk '{print$2}' | grep / > /var/log/sanitychecks/fstab_entries.txt
+  for i in `cat /var/log/sanitychecks/fstab_entries.txt`
+  do
+  Crnt_Mount=`sudo df -Ph | grep -w $i | head -n1 | awk '{print$6}'`
+  if [ "$Crnt_Mount" != "$i" ]; then
+    echo $i >> /var/log/sanitychecks/`uname -n`_POST_TabVsDf.txt
+  fi
+  done
+  TabVsDf_WC=`cat /var/log/sanitychecks/${SN}_POST_TabVsDf.txt | wc -l`
+  TabVsDf=`cat /var/log/sanitychecks/${SN}_POST_TabVsDf.txt`
+  if [ $TabVsDf_WC != 0 ]; then
+    echo -e "$r The below Filesystem entry exists in /etc/fstab but currently not mounted post reboot:-$clr"
+    echo -e "$c $TabVsDf"
+    echo "The below Filesystems entries exists in /etc/fstab but currently not mounted post reboot" >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+    sudo cat /var/log/sanitychecks/`uname -n`_POST_TabVsDf.txt >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+    echo $'\n-------------------------------------------------------------------------------------------------------------------------------------------------------------\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+  fi
+
+  cat /dev/null > /var/log/sanitychecks/inactive_services.txt
+  for i in `cat /var/log/sanitychecks/services.txt`
+  do
+  sudo systemctl status $i  > /var/log/sanitychecks/service_status.txt 2> /dev/null
+  Service_Status=`cat /var/log/sanitychecks/service_status.txt | grep Active | awk '{print$2}' | head -n1`
+  if [ "$Service_Status" != "active" ]; then
+   echo $i >> /var/log/sanitychecks/inactive_services.txt
+  fi
+  done
+  inactive_services_WC=`cat /var/log/sanitychecks/inactive_services.txt | wc -l`
+  inactive_services=`cat /var/log/sanitychecks/inactive_services.txt`
+  if [ $inactive_services_WC != 0 ]; then
+   echo $'\n'
+   echo -e "$r The status of below service(s) is/are not active. Kindly check and start the service.$clr"
+   echo -e "$c $inactive_services $clr"
+   echo "The status of below service(s) is/are not active. Kindly check and start the service." >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+   sudo cat /var/log/sanitychecks/inactive_services.txt >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+   echo $'\n-------------------------------------------------------------------------------------------------------------------------------------------------------------\n' >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+  fi
+
+
+   echo $'\n'
+   read -p "Kindly update the OS PATCHING TRACKER sheet with status [SURE/NOPE]: " Tracker
+  if [ "$Tracker" == "SURE" ];then
+   echo $'\n'
+   echo -e "$g Thanks for the confirmation.$clr"
+  fi
+  if [ "$Tracker" == "NOPE" ];then
+   echo $'\n'
+   echo -e "$r Your response is recorded in the logs.$clr"
+  fi
+   echo -e "$MailID response to update the OS PATCHING TRACKER sheet is $Tracker." >> /var/log/sanitychecks/`uname -n`_${check}_Check.txt
+
+ fi
+
+ echo $'\n'
+ echo -e "$g The $check Check logs are stored in /var/log/sanitychecks/`uname -n`_${check}_Check.txt $clr"
+ echo $'\n'
+ mailx -s "$check-Check Report for Server: `uname -n`" -a /var/log/sanitychecks/`uname -n`_${check}_Check.txt $MailID</var/log/sanitychecks/`uname -n`_${check}_Check.txt
+
+else
+ echo -e "$r Not a listed option, Select either PRE or POST (CASE SENSITIVE)"
+fi
+else
+echo -e "$r Not a listed option, Select either RHEL or SUSE or UBUNTU (CASE SENSITIVE)"
+fi
