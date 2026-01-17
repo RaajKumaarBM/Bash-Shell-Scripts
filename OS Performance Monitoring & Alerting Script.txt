@@ -1,0 +1,107 @@
+#!/bin/bash
+
+########################## Script name: resource_monitor.sh #####################################
+# Purpose    : Monitors critical system resources on Linux servers including CPU, memory,	#
+#              swap, server load, and filesystem utilization. Sends automated email alerts	#
+#              when configured thresholds are exceeded. Designed to run periodically via cron	#
+#              for proactive resource monitoring and reporting.					#
+# Supports   : RHEL, SUSE, and Ubuntu distributions.						#
+# Created By : bmraajkumaar@gmail.com								#
+#################################################################################################
+
+id=`sar -u 60 14 | grep Average | awk '{print$8}'`
+top_cpu=`ps -eo pid,ppid,cmd,user,%cpu,%mem --sort=-%cpu | head`
+top_mem=`ps -eo pid,ppid,cmd,user,%cpu,%mem --sort=-%mem | head`
+top_op=`top -b -n 1`
+top_swp=`for file in /proc/*/status ; do awk '/VmSwap|Name/{printf $2 " " $3}END{ print ""}' $file; done | sort -k 2 -n -r | head -20`
+cpu_utilz=`echo "100 - $id" | bc -l`
+cpu_thres=90
+load_avg=`uptime | cut -d, -f6 | cut -d" " -f2`
+ios=`iostat`
+iow=`top -b -n 1 | grep Cpu | awk '{print $10}'|cut -d. -f1`
+core=`lscpu | grep Core | awk '{print$4}'`
+cpu_count=`nproc`
+tot_cores=`echo "$core*$cpu_count" | bc -l`
+load_per=`echo "$load_avg/$tot_cores*100" | bc -l`
+load_thres=90
+mem_per=`free -t | grep Mem | awk '{print$3/$2*100}'`
+mem_thres=90
+swp_per=`free -t | grep Swap | awk '{print$3/$2*100}'`
+swp_thres=80
+fs_thres=90
+dfPh=`df -Ph | grep -vE 'tmpfs|cdrom'`
+if (( $(echo "$cpu_utilz > $cpu_thres" | bc -l) )); then
+echo $'Hi All, \nThe average CPU Utilization for the last 15 min time interval is above the threshold level.\nKindly check below top consuming process & perform the necessary optimization action.\n' > /tmp/scripts/logs/cpu_utilization.txt
+echo "Current CPU Utilization is $cpu_utilz %" >> /tmp/scripts/logs/cpu_utilization.txt
+echo "Current CPU idle% is $id %" >> /tmp/scripts/logs/cpu_utilization.txt
+echo "Threshold configured is $cpu_thres %" >> /tmp/scripts/logs/cpu_utilization.txt
+echo $'\nTop 10 Process Utilizing High CPU:\n' >> /tmp/scripts/logs/cpu_utilization.txt
+echo "$top_cpu" >> /tmp/scripts/logs/cpu_utilization.txt
+echo $'\nTop command output:\n' >> /tmp/scripts/logs/cpu_utilization.txt
+echo "$top_op" >> /tmp/scripts/logs/cpu_utilization.txt
+if [ $iow -gt 50 ]; then
+echo $'\nThe IOWait is utilizing CPU:' >> /tmp/scripts/logs/cpu_utilization.txt
+fi
+echo $'\nIO Statics:' >> /tmp/scripts/logs/cpu_utilization.txt
+echo "$ios" >> /tmp/scripts/logs/cpu_utilization.txt
+mailx -s "High CPU Utilization on Server `uname -n`" -a /tmp/scripts/logs/cpu_utilization.txt santoshkumar.sakala@accenture.com pallavi.singh.sengar@accenture.com gayathri.gangaraju@accenture.com antonio.zuccaro@accenture.com stefano.tonini@accenture.com MailID@company.com</tmp/scripts/logs/cpu_utilization.txt
+fi
+if (( $(echo "$load_per > $load_thres" | bc -l) )); then
+echo $'Hi All, \nThe average server load for the last 15 min time interval is above the threshold level.\nKindly check below top consuming process & perform the necessary optimization action.\n' > /tmp/scripts/logs/server_load.txt
+echo " " >> /tmp/scripts/logs/server_load.txt
+echo "Current Server Load  is ${load_per%.*} %" >> /tmp/scripts/logs/server_load.txt
+echo " " >> /tmp/scripts/logs/server_load.txt
+echo "Threshold configured is $load_thres %" >> /tmp/scripts/logs/server_load.txt
+echo $'\nTop 10 process utilizing high CPU:\n' >> /tmp/scripts/logs/server_load.txt
+echo "$top_cpu" >> /tmp/scripts/logs/server_load.txt
+echo $'\nTop 10 process utilizing high Memory:\n' >> /tmp/scripts/logs/server_load.txt
+echo "$top_mem" >> /tmp/scripts/logs/server_load.txt
+echo $'\nTop command output:\n' >> /tmp/scripts/logs/server_load.txt
+echo "$top_op" >> /tmp/scripts/logs/server_load.txt
+if [ $iow -gt 50 ]; then
+echo $'\nThe IOWait is Utilizing CPU:' >> /tmp/scripts/logs/server_load.txt
+fi
+echo $'\nIO Statics:' >> /tmp/scripts/logs/server_load.txt
+echo "$ios" >> /tmp/scripts/logs/server_load.txt
+mailx -s "High Server Load On Server `uname -n`" -a /tmp/scripts/logs/server_load.txt santoshkumar.sakala@accenture.com pallavi.singh.sengar@accenture.com gayathri.gangaraju@accenture.com antonio.zuccaro@accenture.com stefano.tonini@accenture.com MailID@company.com</tmp/scripts/logs/server_load.txt
+fi
+if (( $(echo "$mem_per > $mem_thres" | bc -l) )); then
+echo $'Hi All, \nThe memory utilization is above the threshold level.\nKindly check below top memory consuming process & perform the necessary optimization action.\n' > /tmp/scripts/logs/mem_utilization.txt
+echo "Current Memory Utilization is $mem_per %" >> /tmp/scripts/logs/mem_utilization.txt
+echo "Threshold configured is $mem_thres %" >> /tmp/scripts/logs/mem_utilization.txt
+echo $'\nTop 10 Process Utilizing High Memory:\n' >> /tmp/scripts/logs/mem_utilization.txt
+echo "$top_mem" >> /tmp/scripts/logs/mem_utilization.txt
+echo $'\nTop command output:\n' >> /tmp/scripts/logs/mem_utilization.txt
+echo "$top_op" >> /tmp/scripts/logs/mem_utilization.txt
+mailx -s "High Memory Utilization on Server `uname -n`" -a /tmp/scripts/logs/mem_utilization.txt MailID@company.com</tmp/scripts/logs/mem_utilization.txt
+fi
+if (( $(echo "$swp_per > $swp_thres" | bc -l) )); then
+echo $'Hi All, \nThe swap space utilization is above the threshold level.\nKindly check below swap consuming process & perform the necessary optimization action.\n' > /tmp/scripts/logs/swap_utilization.txt
+echo "Current Swap Space Utilization is $swp_per %" >> /tmp/scripts/logs/swap_utilization.txt
+echo " " >> /tmp/scripts/logs/swap_utilization.txt
+echo "Threshold configured is $swp_thres %" >> /tmp/scripts/logs/swap_utilization.txt
+echo $'\nTop command output:\n' >> /tmp/scripts/logs/swap_utilization.txt
+echo "$top_op" >> /tmp/scripts/logs/swap_utilization.txt
+echo $'\nTop 20 process utilizing high swap space:\n' >> /tmp/scripts/logs/swap_utilization.txt
+echo "$top_swp" >> /tmp/scripts/logs/swap_utilization.txt
+mailx -s "High Swap Space Utilization on Server `uname -n`" -a /tmp/scripts/logs/swap_utilization.txt MailID@company.com</tmp/scripts/logs/swap_utilization.txt
+fi
+df -Ph | grep -vE '^Filesystem|tmpfs|cdrom' | awk '{print$5}' | cut -d% -f1 > /tmp/scripts/logs/input_fsutiliz.txt
+cat /dev/null > /tmp/scripts/logs/highfs_utilization.txt
+for i in `cat /tmp/scripts/logs/input_fsutiliz.txt`
+do
+if (( $(echo "$i > $fs_thres" | bc -l) )); then
+df -Ph | grep -w $i | grep -vE 'tmpfs|cdrom' | awk '{print$5,$6}' >> /tmp/scripts/logs/highfs_utilization.txt
+fi
+done
+wc=`cat /tmp/scripts/logs/highfs_utilization.txt | wc -l`
+if (( $(echo "$wc > 0" | bc -l) )); then
+echo "Hi Team, The below filesystem space utilization has breached the threshold value: $fs_thres %" > /tmp/scripts/logs/fs_utilization_comments.txt
+echo " " >> /tmp/scripts/logs/fs_utilization_comments.txt
+sort -u /tmp/scripts/logs/highfs_utilization.txt >> /tmp/scripts/logs/fs_utilization_comments.txt
+echo " " >> /tmp/scripts/logs/fs_utilization_comments.txt
+echo "All Mount Point Information:-" >> /tmp/scripts/logs/fs_utilization_comments.txt
+echo "$dfPh" >> /tmp/scripts/logs/fs_utilization_comments.txt
+mailx -s "High Filesystem Space Utilization on Server `uname -n`" -a /tmp/scripts/logs/fs_utilization_comments.txt MailID@company.com</tmp/scripts/logs/fs_utilization_comments.txt
+fi
+
