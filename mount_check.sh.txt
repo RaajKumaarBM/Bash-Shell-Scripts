@@ -1,0 +1,37 @@
+#!/bin/bash
+
+########################## Script name: mount_check.sh ##########################################
+# Purpose    : Validates filesystem mount points by comparing active mounts against		#
+#              entries defined in /etc/fstab. Detects missing or unmounted filesystems		#
+#              and sends automated email alerts with detailed mount and fstab information.	#
+#              Designed for periodic execution via cron for proactive filesystem monitoring.	#
+# Supports   : RHEL, SUSE, and Ubuntu distributions.						#
+# Created By : bmraajkumaar@gmail.com								#
+#################################################################################################
+
+
+dfPh=`df -Ph`
+fstab=`grep -v "#" /etc/fstab`
+cat /dev/null > /tmp/scripts/logs/Mount_Check.txt
+cat /etc/fstab | grep -v "#" | awk '{print$2}' | grep / > /tmp/scripts/logs/fstab-entries-cron.txt
+for i in `cat /tmp/scripts/logs/fstab-entries-cron.txt`
+do
+crrnt_mount=`df -Ph | egrep -v 'Filesystem|tmpfs' | grep -w $i | head -n1 | awk '{print$6}'`
+if [ "$crrnt_mount" != "$i" ]; then
+echo "$i" >> /tmp/scripts/logs/Mount_Check.txt
+fi
+done
+wc=`cat /tmp/scripts/logs/Mount_Check.txt | wc -l`
+if [ $wc -gt 0 ]; then
+echo $'\nHi Team, \nThe below mount point entries exists in /etc/fstab file but currently not mounted.\nKindly check on this ASAP.\n' > /tmp/scripts/logs/Mount_Check_Comments.txt
+cat /tmp/scripts/logs/Mount_Check.txt >> /tmp/scripts/logs/Mount_Check_Comments.txt
+echo $'\n-----------------------------------------------------------------------------------\n' >> /tmp/scripts/logs/Mount_Check_Comments.txt
+echo $'Mount Point Information:-' >> /tmp/scripts/logs/Mount_Check_Comments.txt
+echo $'\n-----------------------------------------------------------------------------------\n' >> /tmp/scripts/logs/Mount_Check_Comments.txt
+echo "$dfPh" >> /tmp/scripts/logs/Mount_Check_Comments.txt
+echo $'\n-----------------------------------------------------------------------------------\n' >> /tmp/scripts/logs/Mount_Check_Comments.txt
+echo $'The /etc/fstab File Entries:-' >> /tmp/scripts/logs/Mount_Check_Comments.txt
+echo $'\n-----------------------------------------------------------------------------------\n' >> /tmp/scripts/logs/Mount_Check_Comments.txt
+echo "$fstab" >> /tmp/scripts/logs/Mount_Check_Comments.txt
+mailx -s "Filesystem not mounted on `uname -n`" -a /tmp/scripts/logs/Mount_Check_Comments.txt MailID@company.com</tmp/scripts/logs/Mount_Check_Comments.txt
+fi
