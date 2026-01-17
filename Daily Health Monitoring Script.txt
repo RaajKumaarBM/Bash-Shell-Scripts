@@ -1,0 +1,85 @@
+#!/bin/bash
+
+########################## Script name: Daily_Health_Report.sh ####################################
+# Purpose    : It it collects a snapshot of the server’s current state and saves it into a dated  #
+#	       log file for troubleshooting, audits, or routine checks.     			  #
+# Created By : bmraajkumaar@gmail.com								  #
+###################################################################################################
+
+LOG_DIR="/var/log/Health_Monitoring"
+LOG_FILE="$LOG_DIR/Health_Monitoring_$(uname -n)_$(date +"%d%b%y").txt"
+SEPARATOR="-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------"
+
+mkdir -p "$LOG_DIR"
+
+echo -e "\n$SEPARATOR\n" >> "$LOG_FILE"
+
+echo -e "\nHostname, Kernel Version, Operating System, Date & Architecture Details:\n" >> "$LOG_FILE"
+uname -a >> "$LOG_FILE"
+echo -e "\n$SEPARATOR\n" >> "$LOG_FILE"
+
+echo -e "\nCurrent Date & Time:\n" >> "$LOG_FILE"
+date >> "$LOG_FILE"
+echo -e "\n$SEPARATOR\n" >> "$LOG_FILE"
+
+echo -e "\nCurrent Kernel Version:\n" >> "$LOG_FILE"
+uname -r >> "$LOG_FILE"
+echo -e "\n$SEPARATOR\n" >> "$LOG_FILE"
+
+echo -e "\nVM Uptime:\n" >> "$LOG_FILE"
+uptime >> "$LOG_FILE"
+echo -e "\n$SEPARATOR\n" >> "$LOG_FILE"
+
+echo -e "\nOS-release File Contents:\n" >> "$LOG_FILE"
+cat /etc/os-release >> "$LOG_FILE"
+echo -e "\n$SEPARATOR\n" >> "$LOG_FILE"
+
+echo -e "\nMemory Utilization:\n" >> "$LOG_FILE"
+free -h >> "$LOG_FILE"
+echo -e "\n$SEPARATOR\n" >> "$LOG_FILE"
+
+echo -e "\nDisk Space Utilization:\n" >> "$LOG_FILE"
+df -ThP >> "$LOG_FILE"
+echo -e "\n$SEPARATOR\n" >> "$LOG_FILE"
+
+echo -e "\nPermanent Filesystem Entries:\n" >> "$LOG_FILE"
+cat /etc/fstab >> "$LOG_FILE"
+echo -e "\n$SEPARATOR\n" >> "$LOG_FILE"
+
+echo -e "\nList of Block Device Entries:\n" >> "$LOG_FILE"
+lsblk -f >> "$LOG_FILE"
+echo -e "\n$SEPARATOR\n" >> "$LOG_FILE"
+
+echo -e "\nList Available Block ID Entries:\n" >> "$LOG_FILE"
+blkid >> "$LOG_FILE"
+echo -e "\n$SEPARATOR\n" >> "$LOG_FILE"
+
+echo -e "\nPhysical Volume Details:\n" >> "$LOG_FILE"
+pvs >> "$LOG_FILE"
+echo -e "\n$SEPARATOR\n" >> "$LOG_FILE"
+
+echo -e "\nVolume Group Details:\n" >> "$LOG_FILE"
+vgs >> "$LOG_FILE"
+echo -e "\n$SEPARATOR\n" >> "$LOG_FILE"
+
+echo -e "\nLogical Volume Details:\n" >> "$LOG_FILE"
+lvs >> "$LOG_FILE"
+echo -e "\n$SEPARATOR\n" >> "$LOG_FILE"
+
+echo -e "\nIP Configuration:\n" >> "$LOG_FILE"
+ip a show >> "$LOG_FILE"
+echo -e "\n$SEPARATOR\n" >> "$LOG_FILE"
+
+echo -e "\nPrint Local DNS file Entries:\n" >> "$LOG_FILE"
+cat /etc/hosts >> "$LOG_FILE"
+echo -e "\n$SEPARATOR\n" >> "$LOG_FILE"
+
+echo -e "\nPrint DNS server Entries:\n" >> "$LOG_FILE"
+cat /etc/resolv.conf >> "$LOG_FILE"
+echo -e "\n$SEPARATOR\n" >> "$LOG_FILE"
+
+echo -e "\nIP Route Show:\n" >> "$LOG_FILE"
+ip route show >> "$LOG_FILE"
+echo -e "\n$SEPARATOR\n" >> "$LOG_FILE"
+
+find "$LOG_DIR"/Health_Monitoring_* -mtime +30 -exec rm {} \; > /dev/null 2>&1
